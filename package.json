@@ -1,13 +1,27 @@
 {
   "name": "tej-logger",
-  "version": "1.0.0",
-  "description": "Coolest logging library",
-  "type": "module",
+  "version": "1.0.3",
+  "description": "Yet another logging library for Node.js",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:hirakchhatbar/tej-logger.git"
+  },
+  "keywords": [
+    "logger",
+    "logging",
+    "tej.js",
+    "colorful logger",
+    "node.js logger",
+    "styled logger",
+    "console logger"
+  ],
+  "readmeFilename": "README.md",
+  "author": "Hirak Chhatbar",
   "license": "ISC",
   "dependencies": {
     "ansi-colors": "^4.1.3"

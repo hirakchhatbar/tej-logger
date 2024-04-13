@@ -1,7 +1,7 @@
-import ansi from 'ansi-colors';
-import {Console} from 'node:console';
+const ansi = require('ansi-colors');
+const {Console} = require('node:console');
 
-const {blue, red, green, white, italic} = ansi;
+const {blue, red, green, yellow, cyan, white, italic} = ansi;
 
 const time = () => {
   return `⏰  ${white(italic(new Date().toLocaleTimeString()))}`;
@@ -15,7 +15,7 @@ const argsToString = (...args) => {
 
     return arg;
   }).join(' ');
-}
+};
 
 class TejLogger {
   constructor(identifier) {
@@ -31,47 +31,43 @@ class TejLogger {
 
   log() {
     this.logger.log(
-        `${time()} ${blue(this.identifier)} => ${green(argsToString(...arguments))}`);
+        `${time()} ${green('[LOG]')} ${blue(this.identifier)} => ${green(
+            argsToString(...arguments))}`);
   }
 
   error(error) {
     if (error instanceof Error) {
-      this.logger.log(`${time()} ${blue(this.identifier)} => ${red(error.message)}. ${white(
-          'Check stack trace below for more info')}`);
+      this.logger.log(
+          `${time()} ${red('[ERROR]')} ${blue(this.identifier)} => ${red(
+              error.message)}. ${white(
+              'Check stack trace below for more info')}`);
       this.logger.trace(error.stack);
       return;
     }
 
-    this.logger.log(`${time()} ${blue(this.identifier)} => ${red(error)}. ${white('Check stack trace below for more info')}`);
+    this.logger.log(
+        `${time()} ${blue(this.identifier)} => ${red(error)}. ${white(
+            'Check stack trace below for more info')}`);
     this.logger.trace();
   }
 
   warn(message) {
-    this.logger.warn({
-      identifier: this.identifier,
-      message,
-    });
+    this.logger.debug(
+        `${time()} ${yellow('[⚠ WARN]')} ${blue(
+            this.identifier)} => ${yellow(message)}`);
   }
 
   info(message) {
-    if (typeof message === 'object') {
-      this.logger.log({
-        identifier: blue(this.identifier),
-        log: message,
-      });
-      return;
-    }
-
     this.logger.log(
-        `${time()} ${blue(this.identifier)} => ${green(message)}`);
+        `${time()} ${green('[★ INFO]')} ${blue(this.identifier)} => ${green(
+            message)}`);
   }
 
   debug(message) {
-    this.logger.debug({
-      identifier: this.identifier,
-      message,
-    });
+    this.logger.debug(
+        `${time()} ${cyan('[◉ DEBUG]')} ${blue(
+            this.identifier)} => ${cyan(message)}`);
   }
 }
 
-export default TejLogger;
+module.exports = TejLogger;
