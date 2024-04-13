@@ -1,6 +1,6 @@
 {
   "name": "tej-logger",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Yet another logging library for Node.js",
   "main": "index.js",
   "type": "commonjs",
