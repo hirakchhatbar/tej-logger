@@ -35,20 +35,24 @@ class TejLogger {
             argsToString(...arguments))}`);
   }
 
-  error(error) {
+  error(error, trace = true) {
     if (error instanceof Error) {
       this.logger.log(
           `${time()} ${red('[ERROR]')} ${blue(this.identifier)} => ${red(
               error.message)}. ${white(
               'Check stack trace below for more info')}`);
-      this.logger.trace(error.stack);
+
+      if (trace)
+        this.logger.trace(error.stack);
       return;
     }
 
     this.logger.log(
         `${time()} ${blue(this.identifier)} => ${red(error)}. ${white(
             'Check stack trace below for more info')}`);
-    this.logger.trace();
+
+    if (trace)
+      this.logger.trace();
   }
 
   warn(message) {
