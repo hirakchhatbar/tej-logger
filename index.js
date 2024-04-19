@@ -1,4 +1,4 @@
-const ansi = require('ansi-colors');
+import ansi from "ansi-colors";
 const {Console} = require('node:console');
 
 const {blue, red, green, yellow, cyan, white, italic} = ansi;
@@ -36,6 +36,14 @@ class TejLogger {
   }
 
   error(error) {
+    const data =  `${time()} ${red('[ERROR]')} ${blue(this.identifier)} => ${red(
+        error.message)}. ${white(
+        'Check stack trace below for more info')}`;
+
+    console.log({
+      data
+    })
+
     if (error instanceof Error) {
       this.logger.log(
           `${time()} ${red('[ERROR]')} ${blue(this.identifier)} => ${red(

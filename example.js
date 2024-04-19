@@ -1,7 +1,7 @@
-import ansi from 'ansi-colors';
+const ansi = require('ansi-colors');
 const {italic, bold, blue, white, bgGreen, bgRed, whiteBright} = ansi;
 
-import TejLogger from './index.js';
+const TejLogger = require('./index');
 const logger = new TejLogger('Example');
 
 const nextLine = '\n';
@@ -12,7 +12,11 @@ console.log('');
 console.log('');
 console.log('');
 
-logger.log("This is a log message");
+try {
+  throw new Error('Error thrown to demonstrate robust error handling of te.js');
+} catch (error) {
+  logger.error(error);
+}
 
 console.log('');
 console.log('');

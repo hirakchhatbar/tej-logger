@@ -1,5 +1,5 @@
-const ansi = require('ansi-colors');
-const TejLogger = require('./../index');
+import ansi from "ansi-colors";
+import TejLogger from "./../index";
 
 const logger = new TejLogger('HTTP Request');
 const {italic, bold, blue, white, bgGreen, bgRed, whiteBright} = ansi;
@@ -34,4 +34,4 @@ async function logHttpRequest(req, res, next) {
   next();
 }
 
-module.exports = logHttpRequest;
+export default logHttpRequest
