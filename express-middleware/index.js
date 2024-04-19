@@ -1,5 +1,5 @@
 import ansi from "ansi-colors";
-import TejLogger from "./../index";
+import TejLogger from "./../index.js";
 
 const logger = new TejLogger('HTTP Request');
 const {italic, bold, blue, white, bgGreen, bgRed, whiteBright} = ansi;
