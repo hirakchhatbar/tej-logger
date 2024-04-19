@@ -1,5 +1,5 @@
-const ansi = require('ansi-colors');
-const {Console} = require('node:console');
+import ansi from 'ansi-colors';
+import {Console} from 'console'
 
 const {blue, red, green, yellow, cyan, white, italic} = ansi;
 
