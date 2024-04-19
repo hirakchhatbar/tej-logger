@@ -74,4 +74,4 @@ class TejLogger {
   }
 }
 
-module.exports = TejLogger;
+export default TejLogger
