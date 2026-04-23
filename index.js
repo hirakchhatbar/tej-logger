@@ -45,25 +45,45 @@ class TejLogger {
     if (idx !== -1) TejLogger.#hooks.splice(idx, 1);
   }
 
+  /** @type {Readonly<Record<string, unknown>>} */
+  #defaults;
+
   /**
-   * Dispatch a log event to all registered hooks. Errors thrown by hooks are
-   * silently swallowed so they never break the caller's logging flow.
+   * Dispatch a log event to all registered hooks. Instance defaults are
+   * shallow-merged under per-call metadata (per-call keys win). The caller's
+   * metadata object is never mutated.
    *
    * @param {string} level
    * @param {string} message
    * @param {unknown} [metadata]
    */
   #emit(level, message, metadata) {
+    const hasDefaults = Object.keys(this.#defaults).length > 0;
+    const merged =
+      hasDefaults && metadata && typeof metadata === "object"
+        ? { ...this.#defaults, ...metadata }
+        : hasDefaults && !metadata
+          ? { ...this.#defaults }
+          : metadata;
+
     for (const hook of TejLogger.#hooks) {
       try {
-        hook({ level, identifier: this.identifier, message, metadata });
+        hook({ level, identifier: this.identifier, message, metadata: merged });
       } catch {
         /* hooks must not break the logger */
       }
     }
   }
 
-  constructor(identifier) {
+  /**
+   * @param {string} identifier - A label that identifies this logger instance in output.
+   * @param {Object} [options] - Instance options.
+   * @param {Object} [options.defaults] - Key/value pairs merged into every log's metadata.
+   *   Per-call metadata keys take precedence over defaults.
+   * @param {boolean} [options.radar] - Shortcut for `{ defaults: { radar: true } }`.
+   *   Ignored when `options.defaults.radar` is explicitly set.
+   */
+  constructor(identifier, options = {}) {
     this.logger = new Console({
       stdout: process.stdout,
       stderr: process.stderr,
@@ -72,6 +92,12 @@ class TejLogger {
     if (!identifier) throw new Error("Identifier is required for the logger");
 
     this.identifier = identifier;
+
+    const resolved = { ...(options.defaults || {}) };
+    if (options.radar != null && !Object.hasOwn(resolved, "radar")) {
+      resolved.radar = options.radar;
+    }
+    this.#defaults = Object.freeze(resolved);
   }
 
   /**

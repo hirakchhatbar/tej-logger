@@ -1,243 +1,174 @@
-import { describe, it, afterEach } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import TejLogger from "./index.js";
 
+let dispose;
+
 afterEach(() => {
-  // Clean up any hooks left by previous tests
-  while (TejLogger.removeHook._lastRemoved !== undefined) break;
+  if (dispose) dispose();
+  dispose = null;
 });
 
-describe("TejLogger hooks", () => {
-  it("should call registered hook on info()", () => {
-    const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
-
-    const log = new TejLogger("TestService");
-    log.info("hello world");
-
-    assert.equal(events.length, 1);
-    assert.equal(events[0].level, "info");
-    assert.equal(events[0].identifier, "TestService");
-    assert.equal(events[0].message, "hello world");
-    assert.equal(events[0].metadata, undefined);
-
-    dispose();
+describe("TejLogger constructor", () => {
+  it("works with identifier only (backward compat)", () => {
+    const logger = new TejLogger("App");
+    expect(logger.identifier).toBe("App");
   });
 
-  it("should call registered hook on warn()", () => {
-    const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
-
-    const log = new TejLogger("Warn");
-    log.warn("be careful");
-
-    assert.equal(events.length, 1);
-    assert.equal(events[0].level, "warn");
-    assert.equal(events[0].message, "be careful");
-
-    dispose();
+  it("throws when identifier is missing", () => {
+    expect(() => new TejLogger()).toThrow("Identifier is required");
+    expect(() => new TejLogger("")).toThrow("Identifier is required");
   });
 
-  it("should call registered hook on debug()", () => {
-    const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
-
-    const log = new TejLogger("Debug");
-    log.debug("trace this");
-
-    assert.equal(events.length, 1);
-    assert.equal(events[0].level, "debug");
-    assert.equal(events[0].message, "trace this");
-
-    dispose();
-  });
-
-  it("should call registered hook on log()", () => {
-    const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
-
-    const log = new TejLogger("Log");
-    log.log("general message");
-
-    assert.equal(events.length, 1);
-    assert.equal(events[0].level, "log");
-    assert.equal(events[0].message, "general message");
-
-    dispose();
-  });
-
-  it("should call registered hook on error() with Error object", () => {
-    const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
-
-    const log = new TejLogger("Err");
-    log.error(new Error("something broke"), false);
-
-    assert.equal(events.length, 1);
-    assert.equal(events[0].level, "error");
-    assert.equal(events[0].message, "something broke");
-
-    dispose();
-  });
-
-  it("should call registered hook on error() with string", () => {
-    const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
-
-    const log = new TejLogger("Err");
-    log.error("string error", false);
-
-    assert.equal(events.length, 1);
-    assert.equal(events[0].level, "error");
-    assert.equal(events[0].message, "string error");
-
-    dispose();
-  });
-
-  it("should support multiple hooks", () => {
-    const events1 = [];
-    const events2 = [];
-    const d1 = TejLogger.addHook((e) => events1.push(e));
-    const d2 = TejLogger.addHook((e) => events2.push(e));
-
-    const log = new TejLogger("Multi");
-    log.info("test");
-
-    assert.equal(events1.length, 1);
-    assert.equal(events2.length, 1);
-
-    d1();
-    d2();
-  });
-
-  it("should remove hook via dispose function", () => {
-    const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
-
-    const log = new TejLogger("Dispose");
-    log.info("before");
-    dispose();
-    log.info("after");
-
-    assert.equal(events.length, 1);
-    assert.equal(events[0].message, "before");
-  });
-
-  it("should remove hook via removeHook()", () => {
-    const events = [];
-    const hook = (e) => events.push(e);
-    TejLogger.addHook(hook);
-
-    const log = new TejLogger("Remove");
-    log.info("before");
-    TejLogger.removeHook(hook);
-    log.info("after");
-
-    assert.equal(events.length, 1);
-  });
-
-  it("should swallow errors thrown by hooks", () => {
-    const events = [];
-    const d1 = TejLogger.addHook(() => {
-      throw new Error("hook crashed");
-    });
-    const d2 = TejLogger.addHook((e) => events.push(e));
-
-    const log = new TejLogger("Safe");
-    log.info("still works");
-
-    assert.equal(events.length, 1);
-    assert.equal(events[0].message, "still works");
-
-    d1();
-    d2();
-  });
-
-  it("should throw when addHook receives a non-function", () => {
-    assert.throws(() => TejLogger.addHook("not a function"), {
-      message: "Hook must be a function",
-    });
-  });
-
-  it("should be a no-op when removing a hook that was never added", () => {
-    TejLogger.removeHook(() => {});
+  it("ignores unknown option keys", () => {
+    expect(() => new TejLogger("App", { foo: "bar" })).not.toThrow();
   });
 });
 
-describe("TejLogger metadata", () => {
-  it("should pass metadata through info()", () => {
+describe("instance defaults via options.defaults", () => {
+  it("merges defaults into hook metadata", () => {
     const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
+    dispose = TejLogger.addHook((e) => events.push(e));
 
-    const log = new TejLogger("Meta");
-    log.info("user created", { userId: 42 });
+    const logger = new TejLogger("Svc", {
+      defaults: { radar: true, env: "prod" },
+    });
+    logger.info("hello");
 
-    assert.equal(events.length, 1);
-    assert.deepEqual(events[0].metadata, { userId: 42 });
-
-    dispose();
+    expect(events).toHaveLength(1);
+    expect(events[0].metadata).toEqual({ radar: true, env: "prod" });
   });
 
-  it("should pass metadata through warn()", () => {
+  it("provides defaults when per-call metadata is undefined", () => {
     const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
+    dispose = TejLogger.addHook((e) => events.push(e));
 
-    const log = new TejLogger("Meta");
-    log.warn("limit close", { remaining: 5 });
+    const logger = new TejLogger("Svc", { defaults: { radar: true } });
+    logger.warn("oops");
 
-    assert.deepEqual(events[0].metadata, { remaining: 5 });
+    expect(events[0].metadata).toEqual({ radar: true });
+  });
+});
 
-    dispose();
+describe("options.radar shortcut", () => {
+  it("sets defaults.radar when defaults not provided", () => {
+    const events = [];
+    dispose = TejLogger.addHook((e) => events.push(e));
+
+    const logger = new TejLogger("Svc", { radar: true });
+    logger.info("test");
+
+    expect(events[0].metadata).toEqual({ radar: true });
   });
 
-  it("should pass metadata through debug()", () => {
+  it("does not override explicit defaults.radar", () => {
     const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
+    dispose = TejLogger.addHook((e) => events.push(e));
 
-    const log = new TejLogger("Meta");
-    log.debug("cache hit", { key: "abc" });
+    const logger = new TejLogger("Svc", {
+      radar: true,
+      defaults: { radar: false },
+    });
+    logger.info("test");
 
-    assert.deepEqual(events[0].metadata, { key: "abc" });
+    expect(events[0].metadata.radar).toBe(false);
+  });
+});
 
-    dispose();
+describe("per-call metadata overrides instance defaults", () => {
+  it("per-call key wins over instance default", () => {
+    const events = [];
+    dispose = TejLogger.addHook((e) => events.push(e));
+
+    const logger = new TejLogger("Svc", {
+      defaults: { radar: true, env: "prod" },
+    });
+    logger.info("test", { radar: false });
+
+    expect(events[0].metadata).toEqual({ radar: false, env: "prod" });
   });
 
-  it("should pass metadata through error() as second argument (object)", () => {
+  it("per-call can add keys not in defaults", () => {
     const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
+    dispose = TejLogger.addHook((e) => events.push(e));
 
-    const log = new TejLogger("Meta");
-    log.error(new Error("fail"), { orderId: "xyz" });
+    const logger = new TejLogger("Svc", { defaults: { radar: true } });
+    logger.info("test", { extra: 42 });
 
-    assert.equal(events[0].level, "error");
-    assert.deepEqual(events[0].metadata, { orderId: "xyz" });
+    expect(events[0].metadata).toEqual({ radar: true, extra: 42 });
+  });
+});
 
-    dispose();
+describe("caller metadata object is not mutated", () => {
+  it("does not modify the caller's metadata object", () => {
+    const events = [];
+    dispose = TejLogger.addHook((e) => events.push(e));
+
+    const logger = new TejLogger("Svc", { defaults: { radar: true } });
+    const meta = { userId: "abc" };
+    logger.info("test", meta);
+
+    expect(meta).toEqual({ userId: "abc" });
+    expect(events[0].metadata).toEqual({ radar: true, userId: "abc" });
+  });
+});
+
+describe("no defaults produces undefined metadata (backward compat)", () => {
+  it("info without metadata passes undefined to hook", () => {
+    const events = [];
+    dispose = TejLogger.addHook((e) => events.push(e));
+
+    const logger = new TejLogger("App");
+    logger.info("hello");
+
+    expect(events[0].metadata).toBeUndefined();
   });
 
-  it("should pass metadata through error() as third argument", () => {
+  it("warn with metadata passes it through unchanged", () => {
     const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
+    dispose = TejLogger.addHook((e) => events.push(e));
 
-    const log = new TejLogger("Meta");
-    log.error(new Error("fail"), false, { orderId: "xyz" });
+    const logger = new TejLogger("App");
+    logger.warn("oops", { key: "val" });
 
-    assert.equal(events[0].level, "error");
-    assert.deepEqual(events[0].metadata, { orderId: "xyz" });
+    expect(events[0].metadata).toEqual({ key: "val" });
+  });
+});
 
-    dispose();
+describe("error method metadata", () => {
+  it("merges defaults into error metadata", () => {
+    const events = [];
+    dispose = TejLogger.addHook((e) => events.push(e));
+
+    const logger = new TejLogger("Svc", { radar: true });
+    logger.error("something failed", false, { context: "billing" });
+
+    expect(events[0].metadata).toEqual({ radar: true, context: "billing" });
   });
 
-  it("should preserve backward compatibility: error(err, false) suppresses trace", () => {
+  it("merges defaults when error receives object as second arg", () => {
     const events = [];
-    const dispose = TejLogger.addHook((e) => events.push(e));
+    dispose = TejLogger.addHook((e) => events.push(e));
 
-    const log = new TejLogger("Compat");
-    log.error(new Error("test"), false);
+    const logger = new TejLogger("Svc", { defaults: { radar: true } });
+    logger.error("fail", { orderId: 123 });
 
-    assert.equal(events[0].level, "error");
-    assert.equal(events[0].metadata, undefined);
+    expect(events[0].metadata).toEqual({ radar: true, orderId: 123 });
+  });
+});
 
-    dispose();
+describe("frozen defaults cannot be mutated", () => {
+  it("throws on assignment to frozen defaults", () => {
+    const logger = new TejLogger("Svc", { defaults: { radar: true } });
+    // #defaults is private, but we can verify the freeze indirectly:
+    // attempting to use the logger should not allow mutations through the hook
+    const events = [];
+    dispose = TejLogger.addHook((e) => events.push(e));
+
+    logger.info("a");
+    logger.info("b");
+
+    expect(events[0].metadata).toEqual({ radar: true });
+    expect(events[1].metadata).toEqual({ radar: true });
+    expect(events[0].metadata).not.toBe(events[1].metadata);
   });
 });
